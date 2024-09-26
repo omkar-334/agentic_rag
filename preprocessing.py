@@ -1,4 +1,5 @@
-from collections import defaultdict
+import re
+from collections import OrderedDict, defaultdict
 
 import pymupdf
 
@@ -34,6 +35,15 @@ def majority_element(spans, param):
     return max(char_count, key=char_count.get, default=None)
 
 
+def clean_text(text):
+    print("Cleaning = ", text)
+    words = text.split()
+    unique_words = OrderedDict.fromkeys(words)
+    cleaned_text = " ".join(unique_words)
+    cleaned_text = re.sub(r"\s+", " ", cleaned_text).strip()
+    return cleaned_text
+
+
 def get_chunks(doc):
     allchunks = []
 
@@ -63,7 +73,7 @@ def get_chunks(doc):
             if text.strip():
                 chunks.append(
                     {
-                        "text": text.strip(),
+                        "text": clean_text(text.strip()),
                         "page": page_num,
                         "x": block["bbox"][0],
                         "y": block["bbox"][1],
@@ -77,7 +87,36 @@ def get_chunks(doc):
     return allchunks
 
 
-def embed_pdf(path):
-    doc = pymupdf.open(path)
+def process_activities(chunks):
+    # activities = []
+    i = 0
+    while i < len(chunks):
+        chunk = chunks[i]
+        if "Activity" in chunk["text"]:
+            activity = chunk.copy()
+            activity_size = chunks[i + 1]["size"] if i + 1 < len(chunks) else None
+
+            j = i + 1
+            while j < len(chunks) and chunks[j]["size"] == activity_size:
+                activity["text"] += "\n" + chunks[j]["text"]
+                j += 1
+
+            # Replace the range of chunks with the single activity chunk
+            chunks[i:j] = [activity]
+
+            # activities.append(activity)
+            i += 1
+        else:
+            i += 1
+
+    return chunks
+
+
+def embed_pdf(path, buffer=False):
+    if buffer:
+        doc = pymupdf.open(stream=path, filetype="pdf")
+    else:
+        doc = pymupdf.open(path)
     chunks = get_chunks(doc)
+    chunks = process_activities(chunks)
     return chunks
