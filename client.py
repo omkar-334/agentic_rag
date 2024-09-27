@@ -1,4 +1,9 @@
+import os
+
+from dotenv import load_dotenv
 from qdrant_client import QdrantClient
+
+load_dotenv()
 
 
 class HybridClient:
@@ -8,7 +13,7 @@ class HybridClient:
     def __init__(self):
         self.qdrant_client = QdrantClient(
             url="https://e8c7892c-84a5-4b73-9281-27d52258c6d8.europe-west3-0.gcp.cloud.qdrant.io:6333",
-            api_key="B2LX_KVbb7VemiHlxvXxl3ORdz4hxV7xycMRgPcylldtZ1Aakx1rmQ",
+            api_key=os.getenv("QDRANT_API_KEY"),
         )
         self.qdrant_client.set_model(self.DENSE_MODEL)
         self.qdrant_client.set_sparse_model(self.SPARSE_MODEL)
