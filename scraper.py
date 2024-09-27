@@ -3,6 +3,9 @@ from string import ascii_lowercase
 
 import aiohttp
 
+from client import HybridClient
+from preprocessing import index_pdf
+
 grade_map = ascii_lowercase[:10]
 
 subject_map = {
@@ -21,7 +24,7 @@ def get_url(grade, subject, chapter):
 
 
 async def get_book(grade, subject):
-    book = []
+    book = {}
     chapter_num = 1
     async with aiohttp.ClientSession() as session:
         while True:
@@ -30,8 +33,8 @@ async def get_book(grade, subject):
             pdf = download(session, url)
 
             if pdf:
-                chapter = (pdf, grade, subject)
-                book.append(chapter)
+                collection = f"{grade}_{subject}"
+                book[collection] = pdf
             else:
                 break
     return book
@@ -52,3 +55,14 @@ async def download(session, url):
     except Exception as e:
         print(f"Error downloading or processing PDF: {e}")
         return None
+
+
+def upload_book(grade, subject):
+    hclient = HybridClient()
+
+    book = get_book(grade, subject)
+    for collection, pdf in book.items():
+        chunks = index_pdf(pdf)
+
+        hclient.create(collection)
+        hclient.insert(collection, chunks)
