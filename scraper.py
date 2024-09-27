@@ -70,8 +70,7 @@ async def download(session: aiohttp.ClientSession, url: str, max_retries: int = 
 async def upload_book(grade, subject, chapters=None):
     hclient = HybridClient()
 
-    book = await get_book(grade, subject)
-    print(type(book))
+    book = await get_book(grade, subject, chapters)
     for collection, pdf in book.items():
         print(collection)
         chunks = index_pdf(pdf, buffer=True)

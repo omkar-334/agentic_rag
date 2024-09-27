@@ -10,14 +10,14 @@ def sort_text(chunks):
     right_column = []
 
     for chunk in chunks:
-        if chunk["x"] < x_threshold:
+        if chunk["coordinates"][0] < x_threshold:
             left_column.append(chunk)
         else:
             right_column.append(chunk)
 
     # Sort the chunks within each column based on the y-coordinate
-    left_column = sorted(left_column, key=lambda item: item["y"])
-    right_column = sorted(right_column, key=lambda item: item["y"])
+    left_column = sorted(left_column, key=lambda item: item["coordinates"][1])
+    right_column = sorted(right_column, key=lambda item: item["coordinates"][1])
 
     sorted_text = left_column + right_column
     return sorted_text
@@ -75,8 +75,7 @@ def get_chunks(doc):
                     {
                         "text": clean_text(text.strip()),
                         "page": page_num,
-                        "x": block["bbox"][0],
-                        "y": block["bbox"][1],
+                        "coordinates": [round(block["bbox"][0], 1), round(block["bbox"][1], 1)],
                         "color": majority_element(spans, "color"),
                         "size": majority_element(spans, "size"),
                     }

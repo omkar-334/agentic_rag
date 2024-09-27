@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, models
 
 load_dotenv()
 
@@ -24,6 +24,13 @@ class HybridClient:
                 collection_name=collection,
                 vectors_config=self.qdrant_client.get_fastembed_vector_params(),
                 sparse_vectors_config=self.qdrant_client.get_fastembed_sparse_vector_params(),
+                quantization_config=models.ScalarQuantization(
+                    scalar=models.ScalarQuantizationConfig(
+                        type=models.ScalarType.INT8,
+                        quantile=0.99,
+                        always_ram=False,
+                    ),
+                ),
             )
             print(f"--- {collection} collection created")
             return collection
@@ -33,6 +40,8 @@ class HybridClient:
         documents = []
         for chunk in chunks:
             documents.append(chunk.pop("text"))
+            chunk.pop("color")
+            chunk.pop("size")
 
         self.qdrant_client.add(
             collection_name=collection,
@@ -52,3 +61,7 @@ class HybridClient:
         # Select and return metadata
         # metadata = [hit.metadata for hit in search_result]
         return search_result
+
+    def get_chapter_name(self, collection: str):
+        points = self.qdrant_client.retrieve(collection_name=collection, ids=[0])
+        return points[0]
