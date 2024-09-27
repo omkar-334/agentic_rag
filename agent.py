@@ -1,26 +1,19 @@
-import os
-
 from dotenv import load_dotenv
 from strictjson import strict_json_async
 
+from client import HybridClient
+from prompts import AGENT_PROMPT, RAG_SYS_PROMPT, RAG_USER_PROMPT
 from sarvam import speaker, translator
 
 load_dotenv()
 
-RAG_SYS_PROMPT = None
-RAG_USER_PROMPT = None
-
-AGENT_PROMPT = """You are an AI agent. 
-  You are given three functions - retriever (Retreives information from a database), translator and a speaker (converts text to speech). 
-  The database is a Grade {} {} Textbook. Your task is to assess the user query and determine which function to call. 
-  If the function is to be called, return response as None. If any function is not needed, you can answer to the query yourself. Also identify keywords in the query,
-  """
-
 
 async def llm(system_prompt: str, user_prompt: str) -> str:
+    import os
+
     from groq import AsyncGroq
 
-    client = AsyncGroq(api_key=os.get_env("GROQ_API_KEY"))
+    client = AsyncGroq(api_key=os.getenv("GROQ_API_KEY"))
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -60,21 +53,24 @@ async def call_agent(user_prompt, grade, subject):
     return result
 
 
-async def function_caller(user_prompt, grade, subject, client):
-    result = call_agent(user_prompt, grade, subject)
+async def function_caller(user_prompt, grade, subject, chapter):
+    result = await call_agent(user_prompt, grade, subject)
+    print(result)
     function = result["function"].lower()
 
     if function == "none":
         return result["response"]
 
     elif function == "retriever":
-        collection = f"{grade}_{subject}"
+        client = HybridClient()
+        collection = f"{grade}_{subject.lower()}_{chapter}"
 
         data = client.search(collection, user_prompt)
         data = [i.document for i in data]
 
-        system_prompt = RAG_SYS_PROMPT.format(grade, subject)
-        user_prompt = RAG_USER_PROMPT.format(user_prompt)
+        system_prompt = RAG_SYS_PROMPT.format(subject, grade)
+        user_prompt = RAG_USER_PROMPT.format(data, user_prompt)
+        print(user_prompt)
 
         response = await llm(system_prompt, user_prompt)
 
@@ -85,3 +81,4 @@ async def function_caller(user_prompt, grade, subject, client):
 
     elif function == "speaker":
         return await speaker(result["response"], result["dest_lang"])
+    # return base64.b64encode(b"audio data").decode()
