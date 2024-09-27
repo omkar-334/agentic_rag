@@ -36,7 +36,7 @@ def majority_element(spans, param):
 
 
 def clean_text(text):
-    print("Cleaning = ", text)
+    """Cleans repeated text (OCR error)"""
     words = text.split()
     unique_words = OrderedDict.fromkeys(words)
     cleaned_text = " ".join(unique_words)
@@ -88,6 +88,7 @@ def get_chunks(doc):
 
 
 def process_activities(chunks):
+    """Groups lines of 'Activity' together"""
     # activities = []
     i = 0
     while i < len(chunks):
@@ -112,11 +113,12 @@ def process_activities(chunks):
     return chunks
 
 
-def embed_pdf(path, buffer=False):
+def index_pdf(path, buffer=False):
     if buffer:
         doc = pymupdf.open(stream=path, filetype="pdf")
     else:
         doc = pymupdf.open(path)
     chunks = get_chunks(doc)
     chunks = process_activities(chunks)
+    print("--- pdf indexed")
     return chunks

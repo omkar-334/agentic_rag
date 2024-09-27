@@ -20,11 +20,12 @@ class HybridClient:
 
     def create(self, collection: str):
         if not self.qdrant_client.collection_exists(collection):
-            self.create_collection(
+            self.qdrant_client.create_collection(
                 collection_name=collection,
                 vectors_config=self.qdrant_client.get_fastembed_vector_params(),
                 sparse_vectors_config=self.qdrant_client.get_fastembed_sparse_vector_params(),
             )
+            print(f"--- {collection} collection created")
             return collection
         return None
 
@@ -39,6 +40,7 @@ class HybridClient:
             metadata=chunks,
             parallel=0,
         )
+        print("--- pdf inserted")
 
     def search(self, collection, text: str, limit: int = 10):
         search_result = self.qdrant_client.query(
