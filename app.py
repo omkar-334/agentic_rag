@@ -7,8 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from agent import function_caller
+from client import HybridClient
 
 app = FastAPI()
+hclient = HybridClient()
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,14 +23,12 @@ app.add_middleware(
 
 class ChatQuery(BaseModel):
     query: str
-    grade: str
-    subject: str
-    chapter: str
+    collection: str
 
 
 @app.post("/chat")
 async def chat(query: ChatQuery):
-    result = await function_caller(query.query, query.grade, query.subject, query.chapter)
+    result = await function_caller(query.query, query.collection, hclient)
 
     if isinstance(result, str):
         return {"text": result}
@@ -43,7 +43,8 @@ async def chat(query: ChatQuery):
 
 
 async def gradio_interface(input_text, grade, subject, chapter):
-    response = await chat(ChatQuery(query=input_text, grade=grade, subject=subject, chapter=chapter))
+    collection = f"{grade}_{subject.lower()}_{chapter}"
+    response = await chat(ChatQuery(query=input_text, collection=collection))
     if "text" in response:
         return response["text"], None
     elif "audio" in response:

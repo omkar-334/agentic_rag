@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
 from strictjson import strict_json_async
 
-from client import HybridClient
 from prompts import AGENT_PROMPT, RAG_SYS_PROMPT, RAG_USER_PROMPT
 from sarvam import speaker, translator
 
@@ -53,24 +52,21 @@ async def call_agent(user_prompt, grade, subject):
     return result
 
 
-async def function_caller(user_prompt, grade, subject, chapter):
+async def function_caller(user_prompt, collection, client):
+    grade, subject, chapter = collection.split("_")
+
     result = await call_agent(user_prompt, grade, subject)
-    print(result)
     function = result["function"].lower()
 
     if function == "none":
         return result["response"]
 
     elif function == "retriever":
-        client = HybridClient()
-        collection = f"{grade}_{subject.lower()}_{chapter}"
-
         data = client.search(collection, user_prompt)
         data = [i.document for i in data]
 
         system_prompt = RAG_SYS_PROMPT.format(subject, grade)
         user_prompt = RAG_USER_PROMPT.format(data, user_prompt)
-        print(user_prompt)
 
         response = await llm(system_prompt, user_prompt)
 
