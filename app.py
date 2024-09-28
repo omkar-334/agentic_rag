@@ -26,7 +26,7 @@ class ChatQuery(BaseModel):
     collection: str
 
 
-@app.post("/chat")
+@app.get("/chat")
 async def chat(query: ChatQuery):
     return await function_caller(query.query, query.collection, hclient)
 
