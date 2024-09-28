@@ -70,17 +70,12 @@ class TTSQuery(BaseModel):
 
 
 # API Endpoints
-@app.get("/")
-def root():
-    return {
-        "message": "Welcome!",
-        "endpoints": {"status", "query", "agent", "rag", "translate", "tts"},
-    }
-
-
 @app.get("/status")
 async def status():
-    return {"status": "200 OK"}
+    return {
+        "status": "200 OK",
+        "endpoints": {"status", "query", "agent", "rag", "translate", "tts"},
+    }
 
 
 @app.get("/agent")
@@ -193,8 +188,3 @@ with gr.Blocks() as iface:
     close_button.click(lambda: toggle_debug_modal(False), outputs=debug_modal)
 
 app = gr.mount_gradio_app(app, iface, path="/")
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8000)
