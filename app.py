@@ -70,6 +70,19 @@ class TTSQuery(BaseModel):
 
 
 # API Endpoints
+@app.get("/")
+def root():
+    return {
+        "message": "Welcome!",
+        "endpoints": {"status", "query", "agent", "rag", "translate", "tts"},
+    }
+
+
+@app.get("/status")
+async def status():
+    return {"status": "200 OK"}
+
+
 @app.get("/agent")
 async def agent(query: ChatQuery):
     collection = f"{query.grade}_{query.subject.lower()}_{query.chapter}"
