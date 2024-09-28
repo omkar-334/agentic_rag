@@ -1,8 +1,15 @@
 from dotenv import load_dotenv
 from strictjson import strict_json_async
 
-from prompts import AGENT_PROMPT, RAG_SYS_PROMPT, RAG_USER_PROMPT
+from prompts import (
+    AGENT_PROMPT,
+    EXTRACT_SYS_PROMPT,
+    EXTRACT_USER_PROMPT,
+    RAG_SYS_PROMPT,
+    RAG_USER_PROMPT,
+)
 from sarvam import speaker, translator
+from scraper import extract
 
 load_dotenv()
 
@@ -47,6 +54,7 @@ async def call_agent(user_prompt, collection):
             "dest_lang": """Identify the target language from the user query if the function is either "translator" or "speaker". If language is not found, return "none", 
                                     type: Enum["hindi", "bengali", "kannada", "malayalam", "marathi", "odia", "punjabi", "tamil", "telugu", "english", "gujarati", "none"]""",
             "source": "Identify the sentence that the user wants to translate or speak. Else return 'none', type: Optional[str]",
+            "url": "Identify if any URL or link is provided in the user query, type: str",
             "response": "Your response, type: Optional[str]",
         },
         llm=llm,
@@ -62,6 +70,15 @@ async def retriever(user_prompt, collection, client):
 
     system_prompt = RAG_SYS_PROMPT.format(subject, grade)
     user_prompt = RAG_USER_PROMPT.format(data, user_prompt)
+
+    return await llm(system_prompt, user_prompt)
+
+
+async def extractor(user_prompt, url):
+    text = extract(user_prompt)
+
+    system_prompt = EXTRACT_SYS_PROMPT.format(url)
+    user_prompt = EXTRACT_USER_PROMPT.format(text, user_prompt)
 
     return await llm(system_prompt, user_prompt)
 
@@ -82,3 +99,7 @@ async def function_caller(user_prompt, collection, client):
 
     elif function == "speaker":
         return await speaker(result["source"])
+
+    elif function == "extractor":
+        response = await extractor(user_prompt, result["url"])
+        return {"text": response}

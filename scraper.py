@@ -2,9 +2,11 @@ import asyncio
 import base64
 import io
 import json
+import re
 from string import ascii_lowercase
 
 import aiohttp
+from bs4 import BeautifulSoup, Comment, Declaration
 
 from client import HybridClient
 from headers import random_headers
@@ -121,3 +123,26 @@ def upload_book_from_json(json_file_path):
 
         hclient.create(collection)
         hclient.insert(collection, chunks)
+
+
+def is_visible_text(element):
+    if element.parent.name in ["style", "script", "[document]", "head", "title"]:
+        return False
+    elif re.match("<!--.*-->", str(element)):
+        return False
+    elif type(element) is Comment or type(element) is Declaration:
+        return False
+    elif len(str(element)) < 50:
+        return False
+    return True
+
+
+async def extract(url: str):
+    async with aiohttp.ClientSession() as session:
+        headers = random_headers()
+        async with session.get(url, headers=headers, timeout=10) as r:
+            r.raise_for_status()
+            content = await r.read()
+            texts = BeautifulSoup(content, "html.parser").findAll(string=True)
+            text = "".join(list(filter(is_visible_text, texts)))
+            return text
