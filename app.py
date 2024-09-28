@@ -1,5 +1,5 @@
 import base64
-import io
+import tempfile
 
 import gradio as gr
 from fastapi import FastAPI
@@ -28,44 +28,49 @@ class ChatQuery(BaseModel):
 
 @app.post("/chat")
 async def chat(query: ChatQuery):
-    result = await function_caller(query.query, query.collection, hclient)
-
-    if isinstance(result, str):
-        return {"text": result}
-    elif isinstance(result, bytes) or (isinstance(result, str) and result.startswith("data:audio")):
-        if isinstance(result, bytes):
-            audio_b64 = base64.b64encode(result).decode()
-        else:
-            audio_b64 = result.split(",")[1]  # Remove the "data:audio/wav;base64," prefix
-        return {"audio": audio_b64}
-    else:
-        return {"error": "Unexpected result type"}
+    return await function_caller(query.query, query.collection, hclient)
 
 
-async def gradio_interface(input_text, grade, subject, chapter):
+async def gradio_interface(input_text, grade, subject, chapter, history):
     collection = f"{grade}_{subject.lower()}_{chapter}"
     response = await chat(ChatQuery(query=input_text, collection=collection))
+
     if "text" in response:
-        return response["text"], None
-    elif "audio" in response:
-        audio_data = base64.b64decode(response["audio"])
-        return "Audio response generated", (44100, io.BytesIO(audio_data))
+        output = response["text"]
+        history.append((input_text, output))
+
+    elif "audios" in response:
+        audio_data = base64.b64decode(response["audios"][0])
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as audiofile:
+            audiofile.write(audio_data)
+            audiofile.flush()
+
+        return "", history, audiofile.name
+
     else:
-        return "Unexpected response format", None
+        output = "Unexpected response format"
+        history.append((input_text, output))
+
+    return "", history, None
 
 
-iface = gr.Interface(
-    fn=gradio_interface,
-    inputs=[
-        gr.Textbox(lines=2, placeholder="Enter your question here..."),
-        gr.Dropdown(choices=["1", "2", "3", "4", "5", "6", "7", "9", "10", "11", "12"], label="Grade", value="9", interactive=True),
-        gr.Dropdown(choices=["Math", "Science", "History"], label="Subject", value="Science", interactive=True),
-        gr.Dropdown(choices=["1", "2", "3", "4", "5", "6", "7", "9", "10", "11", "12", "13", "14", "15", "16"], label="Chapter", value="11", interactive=True),
-    ],
-    outputs=[gr.Textbox(label="Response"), gr.Audio(label="Audio Response")],
-    title="Agentic RAG Chatbot",
-    description="Ask a question and get an answer from the chatbot. The response may be text or audio.",
-)
+with gr.Blocks() as iface:
+    gr.Markdown("# Agentic RAG Chatbot")
+    gr.Markdown("Ask a question and get an answer from the chatbot. The response may be text or audio.")
+
+    with gr.Row():
+        grade = gr.Dropdown(choices=["1", "2", "3", "4", "5", "6", "7", "9", "10", "11", "12"], label="Grade", value="9", interactive=True)
+        subject = gr.Dropdown(choices=["Math", "Science", "History"], label="Subject", value="Science", interactive=True)
+        chapter = gr.Dropdown(choices=["1", "2", "3", "4", "5", "6", "7", "9", "10", "11", "12", "13", "14", "15", "16"], label="Chapter", value="11", interactive=True)
+
+    chatbot = gr.Chatbot(label="Chat History")
+    msg = gr.Textbox(label="Your message", placeholder="Type your message here...")
+
+    state = gr.State([])
+    audio_output = gr.Audio(label="Audio Response", type="filepath")  # Separate audio output component
+
+    msg.submit(gradio_interface, inputs=[msg, grade, subject, chapter, state], outputs=[msg, chatbot, audio_output])
 
 app = gr.mount_gradio_app(app, iface, path="/")
 

@@ -44,7 +44,7 @@ async def call_agent(user_prompt, grade, subject):
             "src_lang": "Identify the language that the user query is in, type: str",
             "dest_lang": """Identify the target language from the user query if the function is either "translator" or "speaker". If language is not found, return "none", 
                                     type: Enum["hindi", "bengali", "kannada", "malayalam", "marathi", "odia", "punjabi", "tamil", "telugu", "english", "gujarati", "none"]""",
-            "source": "Identify the sentence that the user wants to translate or speak. Retu 'none', type: Optional[str]",
+            "source": "Identify the sentence that the user wants to translate or speak. Else return 'none', type: Optional[str]",
             "response": "Your response, type: Optional[str]",
         },
         llm=llm,
@@ -69,12 +69,10 @@ async def function_caller(user_prompt, collection, client):
         user_prompt = RAG_USER_PROMPT.format(data, user_prompt)
 
         response = await llm(system_prompt, user_prompt)
-
-        return response
+        return {"text": response}
 
     elif function == "translator":
-        return await translator(result["response"], result["src_lang"], result["dest_lang"])
+        return await translator(result["source"], result["src_lang"], result["dest_lang"])
 
     elif function == "speaker":
-        return await speaker(result["response"], result["dest_lang"])
-    # return base64.b64encode(b"audio data").decode()
+        return await speaker(result["source"])
