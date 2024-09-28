@@ -62,3 +62,12 @@ async def speaker(text, src="hindi"):
                 return output
             else:
                 print(response.status)
+
+
+def save_audio(audio_data):
+    os.makedirs("audio_files", exist_ok=True)
+    file_count = len(os.listdir("audio_files"))
+    file_path = f"audio_files/audio_{file_count + 1}.wav"
+    with open(file_path, "wb") as audiofile:
+        audiofile.write(audio_data)
+    return file_path

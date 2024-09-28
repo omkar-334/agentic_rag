@@ -48,7 +48,7 @@ async def call_agent(user_prompt, collection):
         system_prompt=system_prompt,
         user_prompt=user_prompt,
         output_format={
-            "function": 'Type of function to call, type: Enum["retriever", "translator", "speaker", "none"]',
+            "function": 'Type of function to call, type: Enum["retriever", "translator", "speaker", "none", "extractor"]',
             "keywords": "Array of keywords, type: List[str]",
             "src_lang": "Identify the language that the user query is in, type: str",
             "dest_lang": """Identify the target language from the user query if the function is either "translator" or "speaker". If language is not found, return "none", 
@@ -75,7 +75,7 @@ async def retriever(user_prompt, collection, client):
 
 
 async def extractor(user_prompt, url):
-    text = extract(user_prompt)
+    text = await extract(url)
 
     system_prompt = EXTRACT_SYS_PROMPT.format(url)
     user_prompt = EXTRACT_USER_PROMPT.format(text, user_prompt)
@@ -85,6 +85,7 @@ async def extractor(user_prompt, url):
 
 async def function_caller(user_prompt, collection, client):
     result = await call_agent(user_prompt, collection)
+    print(f"Agent log -\n {result} \n\n")
     function = result["function"].lower()
 
     if function == "none":

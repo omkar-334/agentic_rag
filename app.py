@@ -1,5 +1,4 @@
 import base64
-import tempfile
 
 import gradio as gr
 from fastapi import FastAPI
@@ -8,7 +7,7 @@ from pydantic import BaseModel
 
 from agent import function_caller, retriever
 from client import HybridClient
-from sarvam import speaker, translator
+from sarvam import save_audio, speaker, translator
 
 app = FastAPI()
 hclient = HybridClient()
@@ -42,13 +41,13 @@ class TTSQuery(BaseModel):
 
 @app.get("/agent")
 async def agent(query: ChatQuery):
-    collection = f"{grade}_{subject.lower()}_{chapter}"
+    collection = f"{query.grade}_{query.subject.lower()}_{query.chapter}"
     return await function_caller(query.query, collection, hclient)
 
 
 @app.get("/rag")
 async def rag(query: ChatQuery):
-    collection = f"{grade}_{subject.lower()}_{chapter}"
+    collection = f"{query.grade}_{query.subject.lower()}_{query.chapter}"
     return await retriever(query.query, collection, hclient)
 
 
@@ -67,22 +66,27 @@ async def gradio_interface(input_text, grade, subject, chapter, history):
 
     if "text" in response:
         output = response["text"]
-        history.append((input_text, output))
-
+        history.append((input_text, {"type": "text", "content": output}))
     elif "audios" in response:
         audio_data = base64.b64decode(response["audios"][0])
-
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as audiofile:
-            audiofile.write(audio_data)
-            audiofile.flush()
-
-        return "", history, audiofile.name
-
+        audio_path = save_audio(audio_data)
+        history.append((input_text, {"type": "audio", "content": audio_path}))
     else:
         output = "Unexpected response format"
-        history.append((input_text, output))
+        history.append((input_text, {"type": "text", "content": output}))
 
-    return "", history, None
+    return "", history
+
+
+def format_history(history):
+    formatted_history = []
+    for human, assistant in history:
+        formatted_history.append((human, None))
+        if assistant["type"] == "text":
+            formatted_history.append((None, assistant["content"]))
+        elif assistant["type"] == "audio":
+            formatted_history.append((None, gr.Audio(value=assistant["content"], visible=True)))
+    return formatted_history
 
 
 with gr.Blocks() as iface:
@@ -96,11 +100,9 @@ with gr.Blocks() as iface:
 
     chatbot = gr.Chatbot(label="Chat History")
     msg = gr.Textbox(label="Your message", placeholder="Type your message here...")
-
     state = gr.State([])
-    audio_output = gr.Audio(label="Audio Response", type="filepath")  # Separate audio output component
 
-    msg.submit(gradio_interface, inputs=[msg, grade, subject, chapter, state], outputs=[msg, chatbot, audio_output])
+    msg.submit(gradio_interface, inputs=[msg, grade, subject, chapter, state], outputs=[msg, state]).then(format_history, inputs=[state], outputs=[chatbot])
 
 app = gr.mount_gradio_app(app, iface, path="/")
 
