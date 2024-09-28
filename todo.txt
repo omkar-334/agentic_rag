@@ -1,0 +1,11 @@
+assign ids to chunks
+assign chapter name as id 1
+retrieve chapter_name to add to prompt
+better chunking strategy
+refine save/upload code  - DONE
+
+chat history - DONE
+chat history access to llm, agent
+change prompt to be more formal - DONE
+show sources along with page number
+show audio files in chat - DONE
