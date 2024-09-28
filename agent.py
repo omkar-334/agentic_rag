@@ -32,7 +32,9 @@ async def llm(system_prompt: str, user_prompt: str) -> str:
     return chat_completion.choices[0].message.content
 
 
-async def call_agent(user_prompt, grade, subject):
+async def call_agent(user_prompt, collection):
+    grade, subject, chapter = collection.split("_")
+
     system_prompt = AGENT_PROMPT.format(grade, subject)
 
     result = await strict_json_async(
@@ -52,23 +54,27 @@ async def call_agent(user_prompt, grade, subject):
     return result
 
 
-async def function_caller(user_prompt, collection, client):
+async def retriever(user_prompt, collection, client):
     grade, subject, chapter = collection.split("_")
 
-    result = await call_agent(user_prompt, grade, subject)
+    data = client.search(collection, user_prompt)
+    data = [i.document for i in data]
+
+    system_prompt = RAG_SYS_PROMPT.format(subject, grade)
+    user_prompt = RAG_USER_PROMPT.format(data, user_prompt)
+
+    return await llm(system_prompt, user_prompt)
+
+
+async def function_caller(user_prompt, collection, client):
+    result = await call_agent(user_prompt, collection)
     function = result["function"].lower()
 
     if function == "none":
-        return result["response"]
+        return {"text": result["response"]}
 
     elif function == "retriever":
-        data = client.search(collection, user_prompt)
-        data = [i.document for i in data]
-
-        system_prompt = RAG_SYS_PROMPT.format(subject, grade)
-        user_prompt = RAG_USER_PROMPT.format(data, user_prompt)
-
-        response = await llm(system_prompt, user_prompt)
+        response = await retriever(user_prompt, collection, client)
         return {"text": response}
 
     elif function == "translator":

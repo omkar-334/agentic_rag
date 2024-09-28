@@ -40,13 +40,13 @@ async def translator(text, src, dest):
                 return {"text": output["translated_text"]}
 
 
-async def speaker(text, dest="hindi"):
+async def speaker(text, src="hindi"):
     async with aiohttp.ClientSession() as session:
         url = "https://api.sarvam.ai/text-to-speech"
 
         payload = {
             "inputs": [text],
-            "target_language_code": code_map[dest],
+            "target_language_code": code_map[src],
             "speaker": "meera",
             "pitch": 0,
             "pace": 1.25,

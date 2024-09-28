@@ -6,8 +6,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from agent import function_caller
+from agent import function_caller, retriever
 from client import HybridClient
+from sarvam import speaker, translator
 
 app = FastAPI()
 hclient = HybridClient()
@@ -23,17 +24,46 @@ app.add_middleware(
 
 class ChatQuery(BaseModel):
     query: str
-    collection: str
+    grade: str
+    subject: str
+    chapter: str
 
 
-@app.get("/chat")
-async def chat(query: ChatQuery):
-    return await function_caller(query.query, query.collection, hclient)
+class TranslateQuery(BaseModel):
+    text: str
+    src: str
+    dest: str
+
+
+class TTSQuery(BaseModel):
+    text: str
+    src: str
+
+
+@app.get("/agent")
+async def agent(query: ChatQuery):
+    collection = f"{grade}_{subject.lower()}_{chapter}"
+    return await function_caller(query.query, collection, hclient)
+
+
+@app.get("/rag")
+async def rag(query: ChatQuery):
+    collection = f"{grade}_{subject.lower()}_{chapter}"
+    return await retriever(query.query, collection, hclient)
+
+
+@app.get("/translate")
+async def translate(query: TranslateQuery):
+    return await translator(query.text, query.src, query.dest)
+
+
+@app.get("/tts")
+async def tts(query: TTSQuery):
+    return await speaker(query.text, query.src)
 
 
 async def gradio_interface(input_text, grade, subject, chapter, history):
-    collection = f"{grade}_{subject.lower()}_{chapter}"
-    response = await chat(ChatQuery(query=input_text, collection=collection))
+    response = await agent(ChatQuery(query=input_text, grade=grade, subject=subject, chapter=chapter))
 
     if "text" in response:
         output = response["text"]
