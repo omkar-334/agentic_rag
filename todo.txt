@@ -1,4 +1,4 @@
-assign ids to chunks
+assign ids to chunks - Not needed since qdrant handles it
 assign chapter name as id 1
 retrieve chapter_name to add to prompt
 better chunking strategy
@@ -9,3 +9,7 @@ chat history access to llm, agent
 change prompt to be more formal - DONE
 show sources along with page number
 show audio files in chat - DONE
+
+README - DONE
+Approach
+Endpoint description
