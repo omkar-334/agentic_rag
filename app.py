@@ -74,7 +74,13 @@ class TTSQuery(BaseModel):
 async def status():
     return {
         "status": "200 OK",
-        "endpoints": {"status", "query", "agent", "rag", "translate", "tts"},
+        "endpoints": {
+            "/status": {"method": "GET", "parameters": {}},
+            "/agent": {"method": "GET", "parameters": {"query": "string", "grade": "string", "subject": "string", "chapter": "string"}},
+            "/rag": {"method": "GET", "parameters": {"query": "string", "grade": "string", "subject": "string", "chapter": "string"}},
+            "/translate": {"method": "GET", "parameters": {"text": "string", "src": "string", "dest": "string"}},
+            "/tts": {"method": "GET", "parameters": {"text": "string", "src": "string"}},
+        },
     }
 
 
