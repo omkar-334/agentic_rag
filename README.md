@@ -71,31 +71,31 @@ The chatbot utilizes several agent tools to process and respond to queries:
 
 1. **function_caller**:   
     - Main agent function for processing queries and taking decisions.
-    ![Function Caller](images/function_caller.png)
+    ![Function Caller](https://raw.githubusercontent.com/omkar-334/agentic_rag/main/images/function_caller.png)
 
 2. **retriever**: 
    - Purpose: Retrieve relevant information from the vector database.
    - The Agent decides whether to retrieve or not, based on the relevance of the user's prompt and if it's related to the educational database.
-   ![Retriever](images/retreiver.png)
+   ![Retriever](https://raw.githubusercontent.com/omkar-334/agentic_rag/main/images/retreiver.png)
 
 3. **translator**: 
    - Purpose: Translate text between languages.
    - Activate it by asking the chatbot to translate to a specific language.
-   ![Translator](images/translator.png)
+   ![Translator](https://raw.githubusercontent.com/omkar-334/agentic_rag/main/images/translator.png)
 
 4. **speaker**: 
    - Purpose: Convert text to speech.
    - Activate it by asking the chatbot to read aloud or convert to audio.
-   ![Speaker](images/tts.png)
+   ![Speaker](https://raw.githubusercontent.com/omkar-334/agentic_rag/main/images/tts.png)
 
 5. **extractor**
    - Purpose: Extracts text content from website URLs.
    - Activate it by providing a URL and specifying a task like summarization.
-   ![Extractor](images/extractor.png)
+   ![Extractor](https://raw.githubusercontent.com/omkar-334/agentic_rag/main/images/extractor.png)
 
 6. **Agent Debug Logs**
    - The Agent's decisions and logs are visible in a modal below the messagebox.
     - Click on the terminal icon in the upper-right corner to show it.
-   ![Debug](images/debuglog.png)
+   ![Debug](https://raw.githubusercontent.com/omkar-334/agentic_rag/main/images/debuglog.png)
 
 These tools work together to provide a comprehensive and interactive chatbot experience, capable of understanding context, retrieving relevant information, and presenting it in various formats to the user.
